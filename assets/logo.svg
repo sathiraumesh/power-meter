@@ -2,6 +2,7 @@
   <!-- Background tile -->
   <rect width="256" height="256" rx="56" fill="#0f172a"/>
 
+  <g transform="translate(0 -18)">
   <!-- Gauge scale: 240° sweep around (128,148), r=78, green -> yellow -> red -->
   <g fill="none" stroke-width="18">
     <path d="M 60.4 187 A 78 78 0 0 1 77.9 88.2" stroke="#22c55e" stroke-linecap="round"/>
@@ -18,4 +19,10 @@
 
   <!-- Lightning bolt -->
   <path d="M138 104 L106 154 H126 L118 196 L152 140 H131 Z" fill="#facc15" stroke="#0f172a" stroke-width="4" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Name -->
+  <text x="128" y="224" text-anchor="middle" fill="#e2e8f0"
+        font-family="Inter, Segoe UI, Helvetica, Arial, sans-serif"
+        font-size="24" font-weight="700">POWER METER</text>
 </svg>
