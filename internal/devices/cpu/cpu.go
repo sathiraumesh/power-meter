@@ -4,6 +4,7 @@ package cpu
 
 import (
 	"errors"
+	"path/filepath"
 
 	"sathiraumesh/power-meter/internal/devices/cpu/rapl"
 )
@@ -28,6 +29,21 @@ type Meter struct {
 	// Readable is true if a value could be read right now.
 	Readable bool
 	// Err is why it could not be read (often: needs root), or nil.
+	Err error
+}
+
+// Reading is one value read from a CPU meter's energy file.
+type Reading struct {
+	Source Source
+	ID     string
+	Name   string
+	Parent string
+	// File is the file the value was read from, e.g.
+	// "/sys/class/powercap/intel-rapl:0/energy_uj".
+	File string
+	// EnergyUJ is the counter value in microjoules (0 if Err is set).
+	EnergyUJ uint64
+	// Err is why the file could not be read (often: needs root), or nil.
 	Err error
 }
 
@@ -74,4 +90,35 @@ func checkRAPL(root string) ([]Meter, error) {
 		})
 	}
 	return meters, nil
+}
+
+// Read reads the energy file of every CPU meter once.
+// It returns ErrNoMeters if there are none.
+func Read() ([]Reading, error) {
+	return read(rapl.DefaultRoot)
+}
+
+func read(raplRoot string) ([]Reading, error) {
+	zones, err := rapl.Discover(raplRoot)
+	if errors.Is(err, rapl.ErrNoZones) {
+		return nil, ErrNoMeters
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var readings []Reading
+	for _, z := range zones {
+		uj, readErr := z.EnergyUJ()
+		readings = append(readings, Reading{
+			Source:   SourceRAPL,
+			ID:       z.ID,
+			Name:     z.Name,
+			Parent:   z.Parent,
+			File:     filepath.Join(z.Path, "energy_uj"),
+			EnergyUJ: uj,
+			Err:      readErr,
+		})
+	}
+	return readings, nil
 }
