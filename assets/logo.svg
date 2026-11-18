@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="power-meter logo">
+  <!-- Background tile -->
+  <rect width="256" height="256" rx="56" fill="#0f172a"/>
+
+  <!-- Gauge scale: 240° sweep around (128,148), r=78, green -> yellow -> red -->
+  <g fill="none" stroke-width="18">
+    <path d="M 60.4 187 A 78 78 0 0 1 77.9 88.2" stroke="#22c55e" stroke-linecap="round"/>
+    <path d="M 178.1 88.2 A 78 78 0 0 1 195.6 187" stroke="#ef4444" stroke-linecap="round"/>
+    <path d="M 77.9 88.2 A 78 78 0 0 1 178.1 88.2" stroke="#facc15"/>
+  </g>
+
+  <!-- Tick marks -->
+  <g stroke="#94a3b8" stroke-width="4" stroke-linecap="round">
+    <line x1="128" y1="92" x2="128" y2="102"/>
+    <line x1="88.4" y1="108.4" x2="95.5" y2="115.5"/>
+    <line x1="167.6" y1="108.4" x2="160.5" y2="115.5"/>
+  </g>
+
+  <!-- Lightning bolt -->
+  <path d="M138 104 L106 154 H126 L118 196 L152 140 H131 Z" fill="#facc15" stroke="#0f172a" stroke-width="4" stroke-linejoin="round"/>
+</svg>
