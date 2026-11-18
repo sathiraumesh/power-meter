@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="power-meter logo" width="128">
+  <img src="assets/logo.svg" alt="power-meter logo" width="200">
 </p>
 
 <h1 align="center">power-meter</h1>
