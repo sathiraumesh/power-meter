@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strconv"
 	"text/tabwriter"
 	"time"
 
@@ -18,6 +19,26 @@ import (
 // monitor is what the measure command needs from cpu.Monitor.
 type monitor interface {
 	Refresh() (cpu.Sample, error)
+}
+
+// seconds is a duration flag that also accepts a plain number of seconds,
+// so "-i 1" means 1s. Values with a unit ("500ms", "2m") work as usual.
+type seconds time.Duration
+
+func (s *seconds) String() string { return time.Duration(*s).String() }
+func (s *seconds) Type() string   { return "duration" }
+
+func (s *seconds) Set(v string) error {
+	if n, err := strconv.ParseFloat(v, 64); err == nil {
+		*s = seconds(n * float64(time.Second))
+		return nil
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		return fmt.Errorf("use seconds (e.g. 1, 0.5) or a duration (e.g. 500ms, 2m)")
+	}
+	*s = seconds(d)
+	return nil
 }
 
 // newMonitor and wait are swappable in tests.
@@ -35,7 +56,7 @@ var (
 
 func measureCmd() *cobra.Command {
 	var (
-		interval time.Duration
+		interval = seconds(5 * time.Second)
 		count    int
 	)
 
@@ -74,7 +95,7 @@ Runs until --count samples are printed, or until Ctrl+C when --count is 0.`,
 			}
 
 			for i := 0; count == 0 || i < count; i++ {
-				if !wait(ctx, interval) {
+				if !wait(ctx, time.Duration(interval)) {
 					return nil // Ctrl+C
 				}
 				s, err := m.Refresh()
@@ -90,7 +111,7 @@ Runs until --count samples are printed, or until Ctrl+C when --count is 0.`,
 		},
 	}
 
-	cmd.Flags().DurationVarP(&interval, "interval", "i", 5*time.Second, "time between samples, e.g. 1s, 5s")
+	cmd.Flags().VarP(&interval, "interval", "i", "time between samples in seconds, e.g. 1, 0.5, 500ms")
 	cmd.Flags().IntVarP(&count, "count", "c", 0, "number of samples to print (0 = until Ctrl+C)")
 	return cmd
 }
@@ -100,7 +121,7 @@ func printSample(out io.Writer, s cpu.Sample) {
 		s.Time.Format("15:04:05"), s.Interval.Round(time.Millisecond), s.UsageRatio*100)
 
 	w := tabwriter.NewWriter(out, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "ZONE\tPOWER\tACTIVE\tIDLE\tACTIVE TOTAL\tIDLE TOTAL\t")
+	fmt.Fprintln(w, "ZONE\tPOWER\tACTIVE\tIDLE\tACTIVE TOTAL\tIDLE TOTAL\tTOTAL\t")
 
 	failed := 0
 	for _, z := range s.Zones {
@@ -113,12 +134,12 @@ func printSample(out io.Writer, s cpu.Sample) {
 			if errors.Is(z.Err, os.ErrPermission) {
 				msg = "permission denied"
 			}
-			fmt.Fprintf(w, "%s\t%s\t\t\t\t\t\n", name, msg)
+			fmt.Fprintf(w, "%s\t%s\t\t\t\t\t\t\n", name, msg)
 			failed++
 			continue
 		}
-		fmt.Fprintf(w, "%s\t%.2f W\t%.2f W\t%.2f W\t%.2f J\t%.2f J\t\n",
-			name, z.Power, z.ActivePower, z.IdlePower, z.ActiveEnergyTotal, z.IdleEnergyTotal)
+		fmt.Fprintf(w, "%s\t%.2f W\t%.2f W\t%.2f W\t%.2f J\t%.2f J\t%.2f J\t\n",
+			name, z.Power, z.ActivePower, z.IdlePower, z.ActiveEnergyTotal, z.IdleEnergyTotal, z.EnergyTotal)
 	}
 	w.Flush()
 

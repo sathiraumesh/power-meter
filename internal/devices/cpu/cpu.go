@@ -81,9 +81,10 @@ type ZoneUsage struct {
 	IdleEnergy   float64
 
 	// ActiveEnergyTotal and IdleEnergyTotal are running totals since the
-	// monitor started, in joules.
+	// monitor started, in joules. EnergyTotal is their sum.
 	ActiveEnergyTotal float64
 	IdleEnergyTotal   float64
+	EnergyTotal       float64
 
 	// Err is why the zone could not be read this interval (often: needs
 	// root), or nil.
@@ -261,6 +262,7 @@ func (m *Monitor) Refresh() (Sample, error) {
 		}
 		zu.ActiveEnergyTotal = m.active[z.ID]
 		zu.IdleEnergyTotal = m.idle[z.ID]
+		zu.EnergyTotal = zu.ActiveEnergyTotal + zu.IdleEnergyTotal
 		s.Zones = append(s.Zones, zu)
 	}
 

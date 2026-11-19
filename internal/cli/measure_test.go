@@ -74,11 +74,11 @@ func sample(ratio float64, pkg, core cpu.ZoneUsage) cpu.Sample {
 func TestMeasureCmd(t *testing.T) {
 	mon := &fakeMonitor{samples: []cpu.Sample{
 		sample(0.25,
-			cpu.ZoneUsage{Power: 10, ActivePower: 2.5, IdlePower: 7.5, ActiveEnergyTotal: 5, IdleEnergyTotal: 15},
-			cpu.ZoneUsage{Power: 4, ActivePower: 1, IdlePower: 3, ActiveEnergyTotal: 2, IdleEnergyTotal: 6}),
+			cpu.ZoneUsage{Power: 10, ActivePower: 2.5, IdlePower: 7.5, ActiveEnergyTotal: 5, IdleEnergyTotal: 15, EnergyTotal: 20},
+			cpu.ZoneUsage{Power: 4, ActivePower: 1, IdlePower: 3, ActiveEnergyTotal: 2, IdleEnergyTotal: 6, EnergyTotal: 8}),
 		sample(1,
-			cpu.ZoneUsage{Power: 80, ActivePower: 80, IdlePower: 0, ActiveEnergyTotal: 85, IdleEnergyTotal: 15},
-			cpu.ZoneUsage{Power: 30, ActivePower: 30, IdlePower: 0, ActiveEnergyTotal: 32, IdleEnergyTotal: 6}),
+			cpu.ZoneUsage{Power: 80, ActivePower: 80, IdlePower: 0, ActiveEnergyTotal: 85, IdleEnergyTotal: 15, EnergyTotal: 100},
+			cpu.ZoneUsage{Power: 30, ActivePower: 30, IdlePower: 0, ActiveEnergyTotal: 32, IdleEnergyTotal: 6, EnergyTotal: 38}),
 	}}
 
 	out, waited, err := runMeasure(t, mon, nil, -1, "--interval", "2s", "--count", "2")
@@ -93,10 +93,10 @@ func TestMeasureCmd(t *testing.T) {
 	}
 	for _, want := range []string{
 		"12:00:05  interval 2s  CPU usage 25.0%",
-		"ZONE", "POWER", "ACTIVE", "IDLE", "ACTIVE TOTAL", "IDLE TOTAL",
-		"package-0", "10.00 W", "2.50 W", "7.50 W", "5.00 J", "15.00 J",
+		"ZONE", "POWER", "ACTIVE", "IDLE", "ACTIVE TOTAL", "IDLE TOTAL", "TOTAL",
+		"package-0", "10.00 W", "2.50 W", "7.50 W", "5.00 J", "15.00 J", "20.00 J",
 		"└ core", "4.00 W", "1.00 W", "3.00 W",
-		"CPU usage 100.0%", "80.00 W", "85.00 J",
+		"CPU usage 100.0%", "80.00 W", "85.00 J", "100.00 J",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q:\n%s", want, out)
@@ -133,8 +133,26 @@ func TestMeasureCmdNoMeters(t *testing.T) {
 	}
 }
 
+func TestMeasureCmdIntervalSeconds(t *testing.T) {
+	for v, want := range map[string]time.Duration{
+		"1":     time.Second,
+		"0.5":   500 * time.Millisecond,
+		"2s":    2 * time.Second,
+		"500ms": 500 * time.Millisecond,
+	} {
+		mon := &fakeMonitor{samples: []cpu.Sample{{}, {}}}
+		_, waited, err := runMeasure(t, mon, nil, -1, "--interval", v, "--count", "1")
+		if err != nil {
+			t.Fatalf("--interval %s: %v", v, err)
+		}
+		if len(waited) == 0 || waited[0] != want {
+			t.Errorf("--interval %s: waited %v, want %v", v, waited, want)
+		}
+	}
+}
+
 func TestMeasureCmdBadInterval(t *testing.T) {
-	for _, v := range []string{"0s", "-1s", "soon"} {
+	for _, v := range []string{"0", "0s", "-1", "-1s", "soon"} {
 		if _, _, err := runMeasure(t, &fakeMonitor{}, nil, -1, "--interval", v, "--count", "1"); err == nil {
 			t.Errorf("--interval %s: expected error, got nil", v)
 		}

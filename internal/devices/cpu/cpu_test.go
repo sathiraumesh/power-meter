@@ -208,6 +208,7 @@ func TestMonitor(t *testing.T) {
 	// Running totals: active 5+80, idle 15+0.
 	check("pkg ActiveEnergyTotal", pkg.ActiveEnergyTotal, 85)
 	check("pkg IdleEnergyTotal", pkg.IdleEnergyTotal, 15)
+	check("pkg EnergyTotal", pkg.EnergyTotal, 100)
 }
 
 func TestMonitorUnreadableZone(t *testing.T) {
